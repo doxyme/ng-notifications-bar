@@ -130,6 +130,7 @@ Available options:
 - autoHide
 - hideDelay
 - acceptHTML
+- compileHTML
 - autoHideAnimation
 - autoHideAniationDelay
 
@@ -152,6 +153,9 @@ app.config(['notificationsConfigProvider'], function (notificationsConfigProvide
 
 	// support HTML
 	notificationsConfigProvider.setAcceptHTML(false);
+    
+    // compile HTML (support HTML must also be true), allowing the use of			// ng-click...etc inside message html.
+    notificationsConfigProvider.setCompileHTML(true);
 	
 	// Set an animation for hiding the notification
 	notificationsConfigProvider.setAutoHideAnimation('fadeOutNotifications');
@@ -174,6 +178,27 @@ app.controller('main', function ($scope, notifications) {
 			hide: true //bool
 		});
 	};
+});
+```
+
+### Notifications can dismiss other notifications
+
+```js
+// give notification object an id name, two notifications with the same id will // dismiss eachother when activated
+app.controller('main', function ($scope, notifications) {
+	$scope.lostConnection = function () {
+		notifications.showError({
+			message: 'Network Connection Lost',
+            id: 'connection'
+		});
+	};
+    
+    $scope.haveConnection = function() {
+    	notifications.showSuccess({
+        	message: 'Network Connection Back',
+            id: 'connection'
+        })
+    }
 });
 ```
 
