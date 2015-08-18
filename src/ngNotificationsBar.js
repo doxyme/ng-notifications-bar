@@ -30,25 +30,16 @@
 			return config.acceptHTML;
 		}
 
+		function setCompileHTML(value) {
+			config.compileHTML = value;
+		}
+
+		function getCompileHTML() {
+			return config.compileHTML;
+		}
 
 		function setAutoHide(value){
 			config.autoHide = value;
-		}
-		
-		function setAutoHideAnimation(value){
-			config.autoHideAnimation = value;
-		}
-		
-		function getAutoHideAnimation(){
-			return config.autoHideAnimation;
-		}
-		
-		function setAutoHideAnimationDelay(value){
-			config.autoHideAnimationDelay = value;
-		}
-		
-		function getAutoHideAnimationDelay(){
-			return config.autoHideAnimationDelay;
 		}
 
 		function getAutoHide(){
@@ -59,24 +50,20 @@
 			setHideDelay: setHideDelay,
 
 			setAutoHide: setAutoHide,
-			
-			setAutoHideAnimation: setAutoHideAnimation,
-			
-			setAutoHideAnimationDelay: setAutoHideAnimationDelay,
 
 			setAcceptHTML: setAcceptHTML,
+
+			setCompileHTML: setCompileHTML,
 
 			$get: function(){
 				return {
 					getHideDelay: getHideDelay,
 
 					getAutoHide: getAutoHide,
-					
-					getAutoHideAnimation: getAutoHideAnimation,
-					
-					getAutoHideAnimationDelay: getAutoHideAnimationDelay,
 
-					getAcceptHTML: getAcceptHTML
+					getAcceptHTML: getAcceptHTML,
+
+					getCompileHTML: getCompileHTML
 				};
 			}
 		};
@@ -90,10 +77,6 @@
 		var showWarning = function (message) {
 			$rootScope.$broadcast('notifications:warning', message);
 		};
-		
-		var showInfo = function (message) {
-			$rootScope.$broadcast('notifications:info', message);
-		};
 
 		var showSuccess = function (message) {
 			$rootScope.$broadcast('notifications:success', message);
@@ -105,66 +88,78 @@
 
 		return {
 			showError: showError,
-			showInfo: showInfo,
 			showWarning: showWarning,
 			showSuccess: showSuccess,
 			closeAll: closeAll
 		};
 	}]);
 
-	module.directive('notificationsBar', ['notificationsConfig', '$timeout', function (notificationsConfig, $timeout) {
+	module.directive('compileHtml', ['$compile', function($compile) {
+		return {
+			restrict: 'A',
+			link: function(scope, elem, attrs) {
+				scope.$watch(attrs.compileHtml, function(html) {
+					elem.html(html);
+					$compile(elem.contents())(scope);
+				});
+			}
+		};
+	}]);
+
+	module.directive('notificationsBar', ['notificationsConfig', '$timeout', '$window', function (notificationsConfig, $timeout, $window) {
 		return {
 			restrict: 'EA',
 			template: function(elem, attr){
-				var acceptHTML = notificationsConfig.getAcceptHTML() || false;
+				//var acceptHTML = notificationsConfig.getAcceptHTML() || false;
+				var acceptHTML = notificationsConfig.getAcceptHTML();
+				var compileHTML = notificationsConfig.getCompileHTML();
 				var iconClasses = attr.closeicon || 'glyphicon glyphicon-remove';
-				return acceptHTML ? '\
+				return acceptHTML && compileHTML ? '\
 					<div class="notifications-container" ng-if="notifications.length">\
-						<div class="{{note.type}}" ng-repeat="note in notifications" ng-class="note.animation">\
-							<span class="message" ng-bind-html="note.message"></span>\
+						<div class="{{note.type}}" ng-repeat="note in notifications">\
+							<span class="message" compile-html="note.message"></span>\
 							<span class="' + iconClasses + ' close-click" ng-click="close($index)"></span>\
 						</div>\
 					</div>\
-				' : '\
-					<div class="notifications-container" ng-if="notifications.length">\
-						<div class="{{note.type}}" ng-repeat="note in notifications" ng-class="note.animation">\
-							<span class="message" >{{note.message}}</span>\
-							<span class="' + iconClasses + ' close-click" ng-click="close($index)"></span>\
+				' : acceptHTML ? '\
+						<div class="notifications-container" ng-if="notifications.length">\
+							<div class="{{note.type}}" ng-repeat="note in notifications">\
+								<span class="message" ng-bind-html="note.message"></span>\
+								<span class="' + iconClasses + ' close-click" ng-click="close($index)"></span>\
+							</div>\
 						</div>\
-					</div>\
-				'
+						'
+					: '\
+						<div class="notifications-container" ng-if="notifications.length">\
+							<div class="{{note.type}}" ng-repeat="note in notifications">\
+								<span class="message" >{{note.message}}</span>\
+								<span class="' + iconClasses + ' close-click" ng-click="close($index)"></span>\
+							</div>\
+						</div>\
+					'
 
 			},
 			link: function (scope) {
 				var notifications = scope.notifications = [];
+				var connectionNotification;
 				var timers = [];
 				var autoHideDelay = notificationsConfig.getHideDelay() || 3000;
 				var autoHide = notificationsConfig.getAutoHide() || false;
-				var autoHideAnimation = notificationsConfig.getAutoHideAnimation() || '';
-				var autoHideAnimationDelay = notificationsConfig.getAutoHideAnimationDelay() || 1200;
-
 				var removeById = function (id) {
 					var found = -1;
 
 					notifications.forEach(function (el, index) {
 						if (el.id === id) {
 							found = index;
-							
-							el.animation = {};
-							el.animation[autoHideAnimation] = true;
-							
-							scope.$apply();
 						}
 					});
 
 					if (found >= 0) {
-						$timeout(function(){
-							notifications.splice(found, 1);
-						}, autoHideAnimationDelay);
+						notifications.splice(found, 1);
 					}
 				};
 
-				var notificationHandler = function (event, data, type, animation) {
+				var notificationHandler = function (event, data, type) {
 					var message, hide = autoHide, hideDelay = autoHideDelay;
 
 					if (typeof data === 'object') {
@@ -175,8 +170,9 @@
 						message = data;
 					}
 
-					var id = 'notif_' + (new Date()).getTime();
-					notifications.push({id: id, type: type, message: message, animation: animation});
+					var id = data.id ? data.id : 'notif_' + (new Date()).getTime();
+					removeById(id);
+					notifications.push({id: id, type: type, message: message});
 					if (hide) {
 						var timer = $timeout(function () {
 							removeById(id);
@@ -192,10 +188,6 @@
 				scope.$on('notifications:warning', function (event, data) {
 					notificationHandler(event, data, 'warning');
 				});
-				
-				scope.$on('notifications:info', function (event, data) {
-					notificationHandler(event, data, 'info');
-				});
 
 				scope.$on('notifications:success', function (event, data) {
 					notificationHandler(event, data, 'success');
@@ -203,11 +195,7 @@
 
 				scope.$on('notifications:closeAll', function () {
 					notifications.length = 0;
-				})
-
-				scope.close = function (index) {
-					notifications.splice(index, 1);
-				};
+				});
 			}
 		};
 	}]);
