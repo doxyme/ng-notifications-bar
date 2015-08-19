@@ -154,8 +154,7 @@ app.config(['notificationsConfigProvider'], function (notificationsConfigProvide
 	// support HTML
 	notificationsConfigProvider.setAcceptHTML(false);
 
-    // compile HTML (support HTML must also be true), allowing the use of
-    // ng-click...etc inside message html.
+    // compile HTML (support HTML must also be true)
     notificationsConfigProvider.setCompileHTML(true);
 
 	// Set an animation for hiding the notification
