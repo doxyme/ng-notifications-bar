@@ -196,6 +196,10 @@
 				scope.$on('notifications:closeAll', function () {
 					notifications.length = 0;
 				});
+
+				scope.close = function (index) {
+					notifications.splice(index, 1);
+				};
 			}
 		};
 	}]);

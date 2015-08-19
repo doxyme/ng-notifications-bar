@@ -153,17 +153,17 @@ app.config(['notificationsConfigProvider'], function (notificationsConfigProvide
 
 	// support HTML
 	notificationsConfigProvider.setAcceptHTML(false);
-    
+
     // compile HTML (support HTML must also be true), allowing the use of
     // ng-click...etc inside message html.
     notificationsConfigProvider.setCompileHTML(true);
-	
+
 	// Set an animation for hiding the notification
 	notificationsConfigProvider.setAutoHideAnimation('fadeOutNotifications');
-	
+
 	// delay between animation and removing the nofitication
 	notificationsConfigProvider.setAutoHideAnimationDelay(1200);
-	
+
 }])
 ```
 
@@ -185,7 +185,8 @@ app.controller('main', function ($scope, notifications) {
 ### Notifications can dismiss other notifications
 
 ```js
-// give notification object an id name, two notifications with the same id will // dismiss eachother when activated
+// give notification object an id property
+//two notifications with the same id will dismiss each-other when triggered
 app.controller('main', function ($scope, notifications) {
 	$scope.lostConnection = function () {
 		notifications.showError({
@@ -193,7 +194,7 @@ app.controller('main', function ($scope, notifications) {
             id: 'connection'
 		});
 	};
-    
+
     $scope.haveConnection = function() {
     	notifications.showSuccess({
         	message: 'Network Connection Back',
@@ -202,7 +203,25 @@ app.controller('main', function ($scope, notifications) {
     }
 });
 ```
+### Modify directive link Fn to extend functionality
 
+```html
+	This is your notification message. <a ng-click="customStuff($index)">Do Stuff</a> or <a ng-click="close($index)">Close</a>
+```
+
+```js
+	link: function(scope, elem, attr) {
+		//default method for closing notification
+		scope.close = function(index) {
+			notifications.splice(index, 1);
+		}
+		//add a custom method
+		scope.customStuff = function(index) {
+			scope.$emit('do.stuff');
+			notifications.splice(index, 1);
+		}
+	}
+```
 
 ## Development
 
