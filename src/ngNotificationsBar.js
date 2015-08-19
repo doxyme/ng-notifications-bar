@@ -30,12 +30,12 @@
 			return config.acceptHTML;
 		}
 
-		function setCompileHTML(value) {
-			config.compileHTML = value;
+		function setTemplateUrl(url) {
+			 config.templateUrl = url;
 		}
 
-		function getCompileHTML() {
-			return config.compileHTML;
+		function getTemplateUrl() {
+			return config.templateUrl;
 		}
 
 		function setAutoHide(value){
@@ -46,6 +46,34 @@
 			return config.autoHide;
 		}
 
+		function getHTMLTemplate() {
+			return function (elem, attr) {
+				var iconClasses = attr.closeicon || 'glyphicon glyphicon-remove';
+				return '\
+					<div class="notifications-container" ng-if="notifications.length">\
+						<div class="{{note.type}}" ng-repeat="note in notifications">\
+							<span class="message" ng-bind-html="note.message"></span>\
+							<span class="' + iconClasses + ' close-click" ng-click="close($index)"></span>\
+						</div>\
+					</div>\
+				'
+			}
+		}
+
+		function getTemplate() {
+			return function (elem, attr) {
+				var iconClasses = attr.closeicon || 'glyphicon glyphicon-remove';
+				return '\
+					<div class="notifications-container" ng-if="notifications.length">\
+						<div class="{{note.type}}" ng-repeat="note in notifications">\
+							<span class="message" >{{note.message}}</span>\
+							<span class="' + iconClasses + ' close-click" ng-click="close($index)"></span>\
+						</div>\
+					</div>\
+				'
+			}
+		}
+
 		return {
 			setHideDelay: setHideDelay,
 
@@ -53,7 +81,7 @@
 
 			setAcceptHTML: setAcceptHTML,
 
-			setCompileHTML: setCompileHTML,
+			setTemplateUrl: setTemplateUrl,
 
 			$get: function(){
 				return {
@@ -63,7 +91,11 @@
 
 					getAcceptHTML: getAcceptHTML,
 
-					getCompileHTML: getCompileHTML
+					getTemplateUrl: getTemplateUrl,
+
+					getHTMLTemplate: getHTMLTemplate,
+
+					getTemplate: getTemplate
 				};
 			}
 		};
@@ -107,38 +139,12 @@
 	}]);
 
 	module.directive('notificationsBar', ['notificationsConfig', '$timeout', '$window', function (notificationsConfig, $timeout, $window) {
+		var isTemplateUrl = notificationsConfig.getTemplateUrl();
+		var acceptHTML = notificationsConfig.getAcceptHTML() || false;
 		return {
 			restrict: 'EA',
-			template: function(elem, attr){
-				//var acceptHTML = notificationsConfig.getAcceptHTML() || false;
-				var acceptHTML = notificationsConfig.getAcceptHTML();
-				var compileHTML = notificationsConfig.getCompileHTML();
-				var iconClasses = attr.closeicon || 'glyphicon glyphicon-remove';
-				return acceptHTML && compileHTML ? '\
-					<div class="notifications-container" ng-if="notifications.length">\
-						<div class="{{note.type}}" ng-repeat="note in notifications">\
-							<span class="message" compile-html="note.message"></span>\
-							<span class="' + iconClasses + ' close-click" ng-click="close($index)"></span>\
-						</div>\
-					</div>\
-				' : acceptHTML ? '\
-						<div class="notifications-container" ng-if="notifications.length">\
-							<div class="{{note.type}}" ng-repeat="note in notifications">\
-								<span class="message" ng-bind-html="note.message"></span>\
-								<span class="' + iconClasses + ' close-click" ng-click="close($index)"></span>\
-							</div>\
-						</div>\
-						'
-					: '\
-						<div class="notifications-container" ng-if="notifications.length">\
-							<div class="{{note.type}}" ng-repeat="note in notifications">\
-								<span class="message" >{{note.message}}</span>\
-								<span class="' + iconClasses + ' close-click" ng-click="close($index)"></span>\
-							</div>\
-						</div>\
-					'
-
-			},
+			templateUrl: notificationsConfig.getTemplateUrl() || null,
+			template: isTemplateUrl ? null : acceptHTML ? notificationsConfig.getHTMLTemplate() : notificationsConfig.getTemplate(),
 			link: function (scope) {
 				var notifications = scope.notifications = [];
 				var connectionNotification;
