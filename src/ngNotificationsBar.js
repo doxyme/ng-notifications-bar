@@ -205,6 +205,8 @@
 				});
 
 				scope.close = function (index) {
+					var id = notifications[index] && notifications[index].id;
+					$rootScope.$emit('notifications:closed', id);
 					notifications.splice(index, 1);
 				};
 			}
