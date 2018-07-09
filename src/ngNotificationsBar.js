@@ -138,7 +138,7 @@
 		};
 	}]);
 
-	module.directive('notificationsBar', ['notificationsConfig', '$timeout', '$window', function (notificationsConfig, $timeout, $window) {
+	module.directive('notificationsBar', ['notificationsConfig', '$timeout', '$window', '$rootScope', function (notificationsConfig, $timeout, $window, $rootScope) {
 		var isTemplateUrl = notificationsConfig.getTemplateUrl();
 		var acceptHTML = notificationsConfig.getAcceptHTML() || false;
 		return {
@@ -162,6 +162,7 @@
 
 					if (found >= 0) {
 						notifications.splice(found, 1);
+						$rootScope.$emit('notifications:closed', id);
 					}
 				};
 
